@@ -9,6 +9,7 @@ func EnforceHTTP(url string) string {
 	if url[:4] != "http" {
 		return "http://" + url
 	}
+	return url
 }
 
 func RemoveDomainError(url string) bool {
@@ -21,7 +22,7 @@ func RemoveDomainError(url string) bool {
 	newURL = strings.Replace(newURL, "www.", "", 1)
 	newURL = strings.Split(newURL, "/")[0]
 
-	if url == os.Getenv("DOMAIN") {
+	if newURL == os.Getenv("DOMAIN") {
 		return false
 	}
 

@@ -4,6 +4,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/moonman369/Shortn/database"
+	"github.com/moonman369/Shortn/errorhandler"
 )
 
 func ResolveURL(c *fiber.Ctx) error {
@@ -14,8 +15,10 @@ func ResolveURL(c *fiber.Ctx) error {
 
 	value, err := r.Get(database.Ctx, url).Result()
 	if err == redis.Nil {
+		errorhandler.ErrorHandler(err)
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Short was not found in the database"})
 	} else if err != nil {
+		errorhandler.ErrorHandler(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not connect to DB"})
 	}
 

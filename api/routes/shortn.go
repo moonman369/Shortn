@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -9,7 +10,9 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 	"github.com/moonman369/Shortn/database"
+	"github.com/moonman369/Shortn/errorhandler"
 	"github.com/moonman369/Shortn/helpers"
 )
 
@@ -28,9 +31,14 @@ type response struct {
 }
 
 func ShortnURL(c *fiber.Ctx) error {
+	err := godotenv.Load("../.env")
+	if err != nil {
+		errorhandler.ErrorHandler(err)
+	}
 	body := new(request)
 
 	if err := c.BodyParser(&body); err != nil {
+		errorhandler.ErrorHandler(err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Cannot Parse JSON"})
 	}
 
@@ -38,14 +46,16 @@ func ShortnURL(c *fiber.Ctx) error {
 	r2 := database.CreateClient(1)
 	defer r2.Close()
 	val, err := r2.Get(database.Ctx, c.IP()).Result()
-	if err == redis.Nil {
-		_ = r2.Set(database.Ctx, c.IP(), os.Getenv("API_QUOTA"), 30*60*time.Second).Err()
+	if err == redis.Nil || val == "" {
+		errorhandler.ErrorHandler(err)
+		_ = r2.Set(database.Ctx, c.IP(), 10, 30*60*time.Second).Err()
+		fmt.Println(os.Getenv("API_QUOTA"))
 	} else {
-		// val, _ := r2.Get(database.Ctx, c.IP()).Result()
+		val, _ := r2.Get(database.Ctx, c.IP()).Result()
 		valInt, _ := strconv.Atoi(val)
 		if valInt <= 0 {
 			limit, _ := r2.TTL(database.Ctx, c.IP()).Result()
-			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "Rate Limit Exceeded", "reate_limit_reset": limit / time.Nanosecond / time.Minute})
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "Rate Limit Exceeded", "rate_limit_reset": limit / time.Nanosecond / time.Minute})
 		}
 	}
 
@@ -83,6 +93,8 @@ func ShortnURL(c *fiber.Ctx) error {
 
 	err = r.Set(database.Ctx, id, body.URL, body.Expiry*3600*time.Second).Err()
 	if err != nil {
+		fmt.Println(err)
+		errorhandler.ErrorHandler(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Unable to connect to server"})
 	}
 

@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"github.com/gofiber/fiber/v2"
 	"github.com/moonman369/Shortn/database"
 	"github.com/moonman369/Shortn/errorhandler"

@@ -6,10 +6,10 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - db
+      - redis
 
-  db:
-    build: db
+  redis:
+    build: redis
     ports:
       - "6379:6379"
     volumes:

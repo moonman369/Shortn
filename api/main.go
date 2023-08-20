@@ -2,13 +2,12 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
-	"github.com/moonman369/Shortn/routes"
 	"github.com/moonman369/Shortn/errorhandler"
+	"github.com/moonman369/Shortn/routes"
 )
 
 func setupRoutes(app *fiber.App) {
@@ -29,5 +28,5 @@ func main() {
 
 	setupRoutes(app)
 
-	log.Fatal(app.Listen(os.Getenv("APP_PORT")))
+	log.Fatal(app.Listen(":3000"))
 }

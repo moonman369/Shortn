@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -43,18 +43,22 @@ func ShortnURL(c *fiber.Ctx) error {
 	}
 
 	// implementing rate limiting
-	r2 := database.CreateClient(1)
-	defer r2.Close()
-	val, err := r2.Get(database.Ctx, c.IP()).Result()
+	r0 := database.CreateClient(0)
+	defer r0.Close()
+	val, err := r0.Get(database.Ctx, c.IP()).Result()
 	if err == redis.Nil || val == "" {
 		errorhandler.ErrorHandler(err)
-		_ = r2.Set(database.Ctx, c.IP(), 10, 30*60*time.Second).Err()
+		err0 := r0.Set(database.Ctx, c.IP(), 10, 30*60*time.Second).Err()
+		if err0 != nil {
+			errorhandler.ErrorHandler(err0)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "1: Unable to connect to server"})
+		}
 		fmt.Println(os.Getenv("API_QUOTA"))
 	} else {
-		val, _ := r2.Get(database.Ctx, c.IP()).Result()
+		val, _ := r0.Get(database.Ctx, c.IP()).Result()
 		valInt, _ := strconv.Atoi(val)
 		if valInt <= 0 {
-			limit, _ := r2.TTL(database.Ctx, c.IP()).Result()
+			limit, _ := r0.TTL(database.Ctx, c.IP()).Result()
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "Rate Limit Exceeded", "rate_limit_reset": limit / time.Nanosecond / time.Minute})
 		}
 	}
@@ -79,7 +83,7 @@ func ShortnURL(c *fiber.Ctx) error {
 		id = body.CustomShort
 	}
 
-	r := database.CreateClient(0)
+	r := database.CreateClient(1)
 	defer r.Close()
 
 	val, _ = r.Get(database.Ctx, id).Result()
@@ -95,7 +99,7 @@ func ShortnURL(c *fiber.Ctx) error {
 	if err != nil {
 		fmt.Println(err)
 		errorhandler.ErrorHandler(err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Unable to connect to server"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "0: Unable to connect to server"})
 	}
 
 	resp := response{
@@ -106,11 +110,11 @@ func ShortnURL(c *fiber.Ctx) error {
 		XRateLimitReset: 30,
 	}
 
-	r2.Decr(database.Ctx, c.IP())
-	val, _ = r2.Get(database.Ctx, c.IP()).Result()
+	r0.Decr(database.Ctx, c.IP())
+	val, _ = r0.Get(database.Ctx, c.IP()).Result()
 	resp.XRateRemaining, _ = strconv.Atoi(val)
 
-	ttl, _ := r2.TTL(database.Ctx, c.IP()).Result()
+	ttl, _ := r0.TTL(database.Ctx, c.IP()).Result()
 	resp.XRateLimitReset = ttl / time.Nanosecond / time.Minute
 
 	resp.CustomShort = os.Getenv("DOMAIN") + "/" + id

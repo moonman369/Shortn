@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/redis/go-redis/v9"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/moonman369/Shortn/database"
 	"github.com/moonman369/Shortn/errorhandler"
 	"github.com/moonman369/Shortn/helpers"
+	"github.com/redis/go-redis/v9"
 )
 
 type request struct {
@@ -53,7 +53,6 @@ func ShortnURL(c *fiber.Ctx) error {
 			errorhandler.ErrorHandler(err0)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "1: Unable to connect to server"})
 		}
-		fmt.Println(os.Getenv("API_QUOTA"))
 	} else {
 		val, _ := r0.Get(database.Ctx, c.IP()).Result()
 		valInt, _ := strconv.Atoi(val)

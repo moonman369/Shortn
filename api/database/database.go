@@ -15,7 +15,7 @@ func CreateClient(dbNo int) *redis.Client {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "redis:6379", // os.Getenv("DB_ADDRESS"),
 		Password: "",           // os.Getenv("DB_PASSWORD"),
-		DB:       dbNo,
+		DB:       0,
 		Protocol: 3,
 	})
 
